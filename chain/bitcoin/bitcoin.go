@@ -17,6 +17,8 @@ import (
 	wallet_api "github.com/dapplink-labs/dapplink-wallet-api/protobuf/wallet-api"
 )
 
+const ChainID = "DappLinkBitcoin"
+
 type ChainAdaptor struct {
 	btcClient       *base.BaseClient
 	btcDataClient   *base.BaseDataClient

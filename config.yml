@@ -7,16 +7,16 @@ http_server:
 
 chains:
   - chain_name: "Bitcoin"
-    chain_id: "mainnet"
+    chain_id: "DappLinkBitcoin"
     netword: mainnet
   - chain_name: "Ethereum"
-    chain_id: "1"
+    chain_id: "DappLinkEthereum"
     netword: mainnet
 
 
 wallet_node:
   eth:
-    rpc_url: 'https://eth-holesky.g.alchemy.com/v2/z6tD5j7LUK6goAKXptpdYHCvrk9cwVth'
+    rpc_url: 'https://eth.drpc.org'
     rpc_user: ''
     rpc_pass: ''
     data_api_url: 'https://api-holesky.etherscan.io/api?'
@@ -24,32 +24,15 @@ wallet_node:
     data_api_token: ''
     time_out: 15
 
-  op:
-    rpc_url: 'https://eth-holesky.g.alchemy.com/v2/afSCtxPWD3NE5vSjJm2GQ'
-    rpc_user: ''
-    rpc_pass: ''
-    data_api_url: 'https://api-holesky.etherscan.io/api?'
-    data_api_key: 'HZEZGEPJJDA633N421AYW9NE8JFNZZC7JT'
+  btc:
+    rpc_url: 'bitcoin-mainnet.core.chainstack.com'
+    rpc_user: 'objective-colden'
+    rpc_pass: 'plank-scored-lying-duty-lazily-smudge'
+    data_api_url: 'https://www.oklink.com/'
+    data_api_key: '5181d535-b68f-41cf-bbc6-25905e46b6a6'
     data_api_token: ''
-    time_out: 15
-
-  solana:
-    rpc_url: 'https://go.getblock.io/70f479b9ed834b5f96a26934e0492b36'
-    rpc_user: ''
-    rpc_pass: ''
-    data_api_url: 'https://public-api.solscan.io'
-    data_api_key: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJjcmVhdGVkQXQiOjE3MjQwNjIxMzk5MDYsImVtYWlsIjoiemFja2d1by5ndW9AZ21haWwuY29tIiwiYWN0aW9uIjoidG9rZW4tYXBpIiwiYXBpVmVyc2lvbiI6InYxIiwiaWF0IjoxNzI0MDYyMTM5fQ.EaWDC25lyGNx_LqRL5sAYYKLMbq10brnexKnAz9C3UY'
-    data_api_token: ''
-    time_out: 15
-
-  polygon:
-    rpc_url: 'https://polygon-mainnet.g.alchemy.com/v2/afSCtxPWD3NE5vSjJm2GQ'
-    rpc_user: ''
-    rpc_pass: ''
-    data_api_url: 'https://api.polygonscan.com/api?'
-    data_api_key: 'MSZJ952GZXKTJITPXYS1YKC33TBNWHDSIX'
-    data_api_token: ''
-    time_out: 15
+    time_out: 100
+    tp_api_url: 'https://blockchain.info/'
 
 network: mainnet
 enable_api_cache: false

@@ -5,21 +5,29 @@ import (
 	"runtime/debug"
 	"strings"
 
-	"github.com/dapplink-labs/dapplink-wallet-api/chain"
-	"github.com/dapplink-labs/dapplink-wallet-api/chain/ethereum"
-	"github.com/dapplink-labs/dapplink-wallet-api/config"
-	wallet_api "github.com/dapplink-labs/dapplink-wallet-api/protobuf/wallet-api"
+	"github.com/dapplink-labs/dapplink-wallet-api/chain/bitcoin"
 	"github.com/ethereum/go-ethereum/log"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
+
+	"github.com/dapplink-labs/dapplink-wallet-api/chain"
+	"github.com/dapplink-labs/dapplink-wallet-api/chain/ethereum"
+	"github.com/dapplink-labs/dapplink-wallet-api/config"
+	wallet_api "github.com/dapplink-labs/dapplink-wallet-api/protobuf/wallet-api"
 )
+
+const GrpcToken = "DappLinkTheWeb3"
 
 type CommonRequest interface {
 	GetConsumerToken() string
 }
 
-type CommonReply = wallet_api.SupportChainResponse
+type ChainRequest interface {
+	GetChainId() string
+}
+
+type CommonReply = wallet_api.CommonResponse
 
 type ChainId = string
 
@@ -35,10 +43,12 @@ func NewChainDispatcher(conf *config.Config) (*ChainDispatcher, error) {
 	}
 
 	chainAdaptorFactoryMap := map[string]func(conf *config.Config) (chain.IChainAdaptor, error){
-		ethereum.ChainName: ethereum.NewChainAdaptor,
+		ethereum.ChainID: ethereum.NewChainAdaptor,
+		bitcoin.ChainID:  bitcoin.NewChainAdaptor,
 	}
 	supportedChains := []string{
-		ethereum.ChainName,
+		ethereum.ChainID,
+		bitcoin.ChainID,
 	}
 
 	for _, c := range conf.Chains {
@@ -66,25 +76,29 @@ func (d *ChainDispatcher) Interceptor(ctx context.Context, req interface{}, info
 
 	pos := strings.LastIndex(info.FullMethod, "/")
 	method := info.FullMethod[pos+1:]
-
 	consumerToken := req.(CommonRequest).GetConsumerToken()
+	if consumerToken != GrpcToken {
+		return CommonReply{
+			Code: wallet_api.ReturnCode_ERROR,
+			Msg:  "Consumer token is not valid",
+		}, status.Error(codes.PermissionDenied, "access denied")
+	}
 	log.Info(method, "consumerToken", consumerToken, "req", req)
-
 	resp, err = handler(ctx, req)
 	log.Debug("Finish handling", "resp", resp, "err", err)
 	return
 }
 
 func (d *ChainDispatcher) preHandler(req interface{}) (resp *CommonReply) {
-	////chainId := req.(CommonRequest).GetChainId()
-	//log.Debug("chain", chainId, "req", req)
-	//if _, ok := d.registry[chainId]; !ok {
-	//	return &CommonReply{
-	//		Code:    wallet_api.ReturnCode_ERROR,
-	//		Message: config.UnsupportedOperation,
-	//	}
-	//}
-	return &CommonReply{}
+	chainId := req.(ChainRequest).GetChainId()
+	log.Debug("chain", chainId, "req", req)
+	if _, ok := d.registry[chainId]; !ok {
+		return &CommonReply{
+			Code: wallet_api.ReturnCode_ERROR,
+			Msg:  config.UnsupportedOperation,
+		}
+	}
+	return nil
 }
 
 func (d *ChainDispatcher) GetSupportChains(ctx context.Context, request *wallet_api.SupportChainRequest) (*wallet_api.SupportChainResponse, error) {
@@ -98,9 +112,9 @@ func (d *ChainDispatcher) GetSupportChains(ctx context.Context, request *wallet_
 		supportChainList = append(supportChainList, sc)
 	}
 	return &wallet_api.SupportChainResponse{
-		Code:    wallet_api.ReturnCode_SUCCESS,
-		Message: "success",
-		Chains:  supportChainList,
+		Code:   wallet_api.ReturnCode_SUCCESS,
+		Msg:    "success",
+		Chains: supportChainList,
 	}, nil
 }
 
@@ -109,7 +123,7 @@ func (d *ChainDispatcher) ConvertAddresses(ctx context.Context, request *wallet_
 	if resp != nil {
 		return &wallet_api.ConvertAddressesResponse{
 			Code: wallet_api.ReturnCode_ERROR,
-			Msg:  "covert address fail at pre handle",
+			Msg:  "failed to convert addresses",
 		}, nil
 	}
 	return d.registry[request.ChainId].ConvertAddresses(ctx, request)
@@ -120,20 +134,32 @@ func (d *ChainDispatcher) ValidAddresses(ctx context.Context, request *wallet_ap
 	if resp != nil {
 		return &wallet_api.ValidAddressesResponse{
 			Code: wallet_api.ReturnCode_ERROR,
-			Msg:  "valid address fail at pre handle",
+			Msg:  "failed to convert addresses",
 		}, nil
 	}
 	return d.registry[request.ChainId].ValidAddresses(ctx, request)
 }
 
 func (d *ChainDispatcher) GetLastestBlock(ctx context.Context, request *wallet_api.LastestBlockRequest) (*wallet_api.LastestBlockResponse, error) {
-	//TODO implement me
-	panic("implement me")
+	resp := d.preHandler(request)
+	if resp != nil {
+		return &wallet_api.LastestBlockResponse{
+			Code: wallet_api.ReturnCode_ERROR,
+			Msg:  "get lastest block failed",
+		}, nil
+	}
+	return d.registry[request.ChainId].GetLastestBlock(ctx, request)
 }
 
 func (d *ChainDispatcher) GetBlock(ctx context.Context, request *wallet_api.BlockRequest) (*wallet_api.BlockResponse, error) {
-	//TODO implement me
-	panic("implement me")
+	resp := d.preHandler(request)
+	if resp != nil {
+		return &wallet_api.BlockResponse{
+			Code: wallet_api.ReturnCode_ERROR,
+			Msg:  "get block info failed",
+		}, nil
+	}
+	return d.registry[request.ChainId].GetBlock(ctx, request)
 }
 
 func (d *ChainDispatcher) GetTransactionByHash(ctx context.Context, request *wallet_api.TransactionByHashRequest) (*wallet_api.TransactionByHashResponse, error) {

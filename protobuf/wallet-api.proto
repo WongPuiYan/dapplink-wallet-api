@@ -15,6 +15,11 @@ enum TxStatus {
   Other = 4;
 }
 
+message CommonResponse {
+  ReturnCode code = 1;
+  string msg = 2;
+}
+
 message EndPoint {
   string url = 1;
 }
@@ -32,7 +37,7 @@ message SupportChainRequest {
 
 message SupportChainResponse {
   ReturnCode code = 1;
-  string message = 2;
+  string msg = 2;
   repeated SupportChain chains = 3;
 }
 
@@ -105,8 +110,10 @@ message TransactionList {
   string tx_hash = 1;
   string fee = 2;
   uint32 status = 3;
-  repeated FromAddress from = 4;
-  repeated ToAddress to = 5;
+  uint32 txType = 4;
+  string contract_address = 5;
+  repeated FromAddress from = 6;
+  repeated ToAddress to = 7;
 }
 
 message BlockRequest {
@@ -120,7 +127,7 @@ message BlockRequest {
 message BlockResponse{
   ReturnCode code = 1;
   string msg = 2;
-  int64 height = 3;
+  string height = 3;
   string hash = 4;
   repeated TransactionList transactions = 5;
 }
@@ -144,6 +151,8 @@ message TransactionByAddressRequest {
   string network = 3;
   string address = 4;
   string contract_address = 5;
+  uint64 page = 6;
+  uint64 page_size = 7;
 }
 
 message TransactionByAddressResponse {
