@@ -366,8 +366,12 @@ func (c ChainAdaptor) SendTransaction(ctx context.Context, req *wallet_api.SendT
 }
 
 func (c ChainAdaptor) BuildTransactionSchema(ctx context.Context, request *wallet_api.TransactionSchemaRequest) (*wallet_api.TransactionSchemaResponse, error) {
-	//TODO implement me
-	panic("implement me")
+	eip1559TxJson := evmbase.Eip1559DynamicFeeTx{}
+	return &wallet_api.TransactionSchemaResponse{
+		Code:   wallet_api.ReturnCode_SUCCESS,
+		Msg:    "build transaction schema success",
+		Schema: util.ToJSONString(eip1559TxJson),
+	}, nil
 }
 
 func (c ChainAdaptor) BuildUnSignTransaction(ctx context.Context, request *wallet_api.UnSignTransactionRequest) (*wallet_api.UnSignTransactionResponse, error) {
@@ -535,6 +539,5 @@ func (c *ChainAdaptor) buildDynamicFeeTx(base64Tx string) (*types.DynamicFeeTx, 
 		Value:     finalAmount,
 		Data:      buildData,
 	}
-
 	return dFeeTx, &dynamicFeeTx, nil
 }

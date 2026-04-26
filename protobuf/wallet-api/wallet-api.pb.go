@@ -437,6 +437,7 @@ func (x *PublicKey) GetPublicKey() string {
 type Addresses struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Address       string                 `protobuf:"bytes,1,opt,name=address,proto3" json:"address,omitempty"`
+	PublicKey     string                 `protobuf:"bytes,2,opt,name=public_key,json=publicKey,proto3" json:"public_key,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -474,6 +475,13 @@ func (*Addresses) Descriptor() ([]byte, []int) {
 func (x *Addresses) GetAddress() string {
 	if x != nil {
 		return x.Address
+	}
+	return ""
+}
+
+func (x *Addresses) GetPublicKey() string {
+	if x != nil {
+		return x.PublicKey
 	}
 	return ""
 }
@@ -2722,9 +2730,11 @@ const file_protobuf_wallet_api_proto_rawDesc = "" +
 	"\x06chains\x18\x03 \x03(\v2\r.SupportChainR\x06chains\"*\n" +
 	"\tPublicKey\x12\x1d\n" +
 	"\n" +
-	"public_key\x18\x01 \x01(\tR\tpublicKey\"%\n" +
+	"public_key\x18\x01 \x01(\tR\tpublicKey\"D\n" +
 	"\tAddresses\x12\x18\n" +
-	"\aaddress\x18\x01 \x01(\tR\aaddress\"\xc7\x01\n" +
+	"\aaddress\x18\x01 \x01(\tR\aaddress\x12\x1d\n" +
+	"\n" +
+	"public_key\x18\x02 \x01(\tR\tpublicKey\"\xc7\x01\n" +
 	"\x17ConvertAddressesRequest\x12%\n" +
 	"\x0econsumer_token\x18\x01 \x01(\tR\rconsumerToken\x12\x19\n" +
 	"\bchain_id\x18\x02 \x01(\tR\achainId\x12\x18\n" +

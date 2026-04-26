@@ -47,6 +47,7 @@ message PublicKey {
 
 message Addresses {
    string address = 1;
+   string public_key = 2;
 }
 
 message ConvertAddressesRequest {
