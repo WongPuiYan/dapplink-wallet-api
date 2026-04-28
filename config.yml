@@ -39,6 +39,24 @@ wallet_node:
     time_out: 100
     tp_api_url: 'https://blockchain.info/'
 
+  solana:
+    rpc_url: 'https://go.getblock.io/70f479b9ed834b5f96a26934e0492b36'
+    rpc_user: ''
+    rpc_pass: ''
+    data_api_url: 'https://public-api.solscan.io'
+    data_api_key: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJjcmVhdGVkQXQiOjE3MjQwNjIxMzk5MDYsImVtYWlsIjoiemFja2d1by5ndW9AZ21haWwuY29tIiwiYWN0aW9uIjoidG9rZW4tYXBpIiwiYXBpVmVyc2lvbiI6InYxIiwiaWF0IjoxNzI0MDYyMTM5fQ.EaWDC25lyGNx_LqRL5sAYYKLMbq10brnexKnAz9C3UY'
+    data_api_token: ''
+    time_out: 15
+
+  tron:
+    rpc_url: 'https://api.trongrid.io'
+    rpc_user: 'TRON-PRO-API-KEY'
+    rpc_pass: 'f7ae3e01-17d1-4a31-92b3-57f99457d915'
+    data_api_url: 'https://www.oklink.com'
+    data_api_key: '5181d535-b68f-41cf-bbc6-25905e46b6a6'
+    data_api_token: ''
+    time_out: 15
+
 network: mainnet
 enable_api_cache: false
 

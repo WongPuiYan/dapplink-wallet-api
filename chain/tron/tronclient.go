@@ -3,7 +3,6 @@ package tron
 import (
 	"encoding/json"
 	"fmt"
-	"strings"
 	"time"
 
 	"github.com/go-resty/resty/v2"
@@ -22,7 +21,9 @@ type TronClient struct {
 // DialTronClient Initialize and return a TronClient instance
 func DialTronClient(rpcURL, rpcUser, rpcPass string) *TronClient {
 	client := resty.New()
-	client.SetHeader(rpcUser, rpcPass)
+	if rpcUser != "" && rpcPass != "" {
+		client.SetHeader("TRON-PRO-API-KEY", rpcPass)
+	}
 	client.SetBaseURL(rpcURL)
 	client.SetTimeout(defaultRequestTimeout)
 	client.SetRetryCount(defaultRetryCount)
@@ -32,78 +33,53 @@ func DialTronClient(rpcURL, rpcUser, rpcPass string) *TronClient {
 	}
 }
 
-// JsonRpc Call JSON-RPC
 func (client *TronClient) JsonRpcBlock(params interface{}, result interface{}) error {
-	// 构造请求体，确保 id_or_num 是字符串类型
 	var idOrNum string
 	switch v := params.(type) {
 	case int64:
-		idOrNum = fmt.Sprintf("\"%d\"", v) // 添加引号包裹数字
+		idOrNum = fmt.Sprintf("\"%d\"", v)
 	case string:
-		idOrNum = fmt.Sprintf("\"%s\"", v) // 添加引号包裹字符串
+		idOrNum = fmt.Sprintf("\"%s\"", v)
 	default:
 		return fmt.Errorf("unsupported params type: %T", params)
 	}
 
 	requestBody := map[string]interface{}{
-		"id_or_num": json.RawMessage(idOrNum), // 使用 RawMessage 保持引号
+		"id_or_num": json.RawMessage(idOrNum),
 		"detail":    true,
 	}
-
-	// 打印请求信息
-	requestJSON, _ := json.MarshalIndent(requestBody, "", "  ")
-	fmt.Printf("Request URL: %s\n", client.rpc.BaseURL+"/wallet/getblock")
-	fmt.Printf("Request Headers:\n%v\n", client.rpc.Header)
-	fmt.Printf("Request Body:\n%s\n", string(requestJSON))
 
 	resp, err := client.rpc.R().
 		SetBody(requestBody).
 		SetResult(result).
-		Post("/wallet/getblock")
+		Post("/walletsolidity/getblock")
 
 	if err != nil {
 		return fmt.Errorf("request failed: %v", err)
 	}
 
-	// 打印响应信息
-	fmt.Printf("Response Status Code: %d\n", resp.StatusCode())
-	fmt.Printf("Response Body:\n%s\n", string(resp.Body()))
-
-	// 检查是否包含错误信息
-	if strings.Contains(string(resp.Body()), "Error") {
-		return fmt.Errorf("API error: %s", string(resp.Body()))
-	}
-
 	if resp.IsError() {
-		return fmt.Errorf("API request failed with status code: %d", resp.StatusCode())
+		return fmt.Errorf("API request failed with status code: %d, body: %s", resp.StatusCode(), string(resp.Body()))
 	}
 
 	return nil
 }
 
-// JsonRpc Call JSON-RPC
 func (client *TronClient) JsonRpcBlockHeader(params interface{}, result interface{}) error {
-	// 构造请求体，确保 id_or_num 是字符串类型
 	var idOrNum string
 	switch v := params.(type) {
 	case int64:
-		idOrNum = fmt.Sprintf("\"%d\"", v) // 添加引号包裹数字
+		idOrNum = fmt.Sprintf("\"%d\"", v)
 	case string:
-		idOrNum = fmt.Sprintf("\"%s\"", v) // 添加引号包裹字符串
+		idOrNum = fmt.Sprintf("\"%s\"", v)
 	default:
 		return fmt.Errorf("unsupported params type: %T", params)
 	}
 
 	requestBody := map[string]interface{}{
-		"id_or_num": json.RawMessage(idOrNum), // 使用 RawMessage 保持引号
+		"id_or_num": json.RawMessage(idOrNum),
 		"detail":    false,
 	}
-
-	// 打印请求信息
-	requestJSON, _ := json.MarshalIndent(requestBody, "", "  ")
-	fmt.Printf("Request URL: %s\n", client.rpc.BaseURL+"/wallet/getblock")
-	fmt.Printf("Request Headers:\n%v\n", client.rpc.Header)
-	fmt.Printf("Request Body:\n%s\n", string(requestJSON))
 
 	resp, err := client.rpc.R().
 		SetBody(requestBody).
@@ -114,17 +90,8 @@ func (client *TronClient) JsonRpcBlockHeader(params interface{}, result interfac
 		return fmt.Errorf("request failed: %v", err)
 	}
 
-	// 打印响应信息
-	fmt.Printf("Response Status Code: %d\n", resp.StatusCode())
-	fmt.Printf("Response Body:\n%s\n", string(resp.Body()))
-
-	// 检查是否包含错误信息
-	if strings.Contains(string(resp.Body()), "Error") {
-		return fmt.Errorf("API error: %s", string(resp.Body()))
-	}
-
 	if resp.IsError() {
-		return fmt.Errorf("API request failed with status code: %d", resp.StatusCode())
+		return fmt.Errorf("API request failed with status code: %d, body: %s", resp.StatusCode(), string(resp.Body()))
 	}
 
 	return nil
@@ -211,17 +178,10 @@ func (client *TronClient) JsonRpcGetBlockByHash(params interface{}, result inter
 	return nil
 }
 func (client *TronClient) JsonRpcGetBalance(params interface{}, result interface{}) error {
-
 	requestBody := map[string]interface{}{
-		"address": params, // 使用 RawMessage 保持引号
+		"address": params,
 		"visible": true,
 	}
-
-	// 打印请求信息
-	requestJSON, _ := json.MarshalIndent(requestBody, "", "  ")
-	fmt.Printf("Request URL: %s\n", client.rpc.BaseURL+"/wallet/getblock")
-	fmt.Printf("Request Headers:\n%v\n", client.rpc.Header)
-	fmt.Printf("Request Body:\n%s\n", string(requestJSON))
 
 	resp, err := client.rpc.R().
 		SetBody(requestBody).
@@ -232,17 +192,8 @@ func (client *TronClient) JsonRpcGetBalance(params interface{}, result interface
 		return fmt.Errorf("request failed: %v", err)
 	}
 
-	// 打印响应信息
-	fmt.Printf("Response Status Code: %d\n", resp.StatusCode())
-	fmt.Printf("Response Body:\n%s\n", string(resp.Body()))
-
-	// 检查是否包含错误信息
-	if strings.Contains(string(resp.Body()), "Error") {
-		return fmt.Errorf("API error: %s", string(resp.Body()))
-	}
-
 	if resp.IsError() {
-		return fmt.Errorf("API request failed with status code: %d", resp.StatusCode())
+		return fmt.Errorf("API request failed with status code: %d, body: %s", resp.StatusCode(), string(resp.Body()))
 	}
 
 	return nil
@@ -276,14 +227,8 @@ func (client *TronClient) GetTransactionByHash(hush string) (*Transaction, error
 
 func (client *TronClient) JsonRpcGetTransactionByHash(params interface{}, result interface{}) error {
 	requestBody := map[string]interface{}{
-		"value": params, // 使用 RawMessage 保持引号
+		"value": params,
 	}
-
-	// 打印请求信息
-	requestJSON, _ := json.MarshalIndent(requestBody, "", "  ")
-	fmt.Printf("Request URL: %s\n", client.rpc.BaseURL+"/wallet/getblock")
-	fmt.Printf("Request Headers:\n%v\n", client.rpc.Header)
-	fmt.Printf("Request Body:\n%s\n", string(requestJSON))
 
 	resp, err := client.rpc.R().
 		SetBody(requestBody).
@@ -294,17 +239,8 @@ func (client *TronClient) JsonRpcGetTransactionByHash(params interface{}, result
 		return fmt.Errorf("request failed: %v", err)
 	}
 
-	// 打印响应信息
-	fmt.Printf("Response Status Code: %d\n", resp.StatusCode())
-	fmt.Printf("Response Body:\n%s\n", string(resp.Body()))
-
-	// 检查是否包含错误信息
-	if strings.Contains(string(resp.Body()), "Error") {
-		return fmt.Errorf("API error: %s", string(resp.Body()))
-	}
-
 	if resp.IsError() {
-		return fmt.Errorf("API request failed with status code: %d", resp.StatusCode())
+		return fmt.Errorf("API request failed with status code: %d, body: %s", resp.StatusCode(), string(resp.Body()))
 	}
 
 	return nil

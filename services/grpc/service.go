@@ -13,14 +13,14 @@ import (
 
 	"github.com/dapplink-labs/dapplink-wallet-api/chaindispatcher"
 	"github.com/dapplink-labs/dapplink-wallet-api/config"
-	"github.com/dapplink-labs/dapplink-wallet-api/protobuf/wallet-api"
+	"github.com/dapplink-labs/dapplink-wallet-api/protobuf/walletapi"
 )
 
 const MaxReceivedMessageSize = 1024 * 1024 * 30000
 
 type GrpcService struct {
 	conf *config.Config
-	wallet_api.UnimplementedWalletApiGateWayServiceServer
+	walletapi.UnimplementedWalletApiGateWayServiceServer
 	stopped atomic.Bool
 }
 
@@ -58,7 +58,7 @@ func (s *GrpcService) Start(ctx context.Context) error {
 		gs := grpc.NewServer(opt, grpc.ChainUnaryInterceptor(dispatcher.Interceptor))
 		defer gs.GracefulStop()
 
-		wallet_api.RegisterWalletApiGateWayServiceServer(gs, dispatcher)
+		walletapi.RegisterWalletApiGateWayServiceServer(gs, dispatcher)
 
 		listener, err := net.Listen("tcp", addr)
 		if err != nil {

@@ -7,6 +7,7 @@ import (
 
 	"github.com/dapplink-labs/dapplink-wallet-api/chain/solana"
 	"github.com/dapplink-labs/dapplink-wallet-api/chain/tron"
+	"github.com/dapplink-labs/dapplink-wallet-api/protobuf/common"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -17,7 +18,7 @@ import (
 	"github.com/dapplink-labs/dapplink-wallet-api/chain/bitcoin"
 	"github.com/dapplink-labs/dapplink-wallet-api/chain/ethereum"
 	"github.com/dapplink-labs/dapplink-wallet-api/config"
-	wallet_api "github.com/dapplink-labs/dapplink-wallet-api/protobuf/wallet-api"
+	walletapi "github.com/dapplink-labs/dapplink-wallet-api/protobuf/walletapi"
 )
 
 const GrpcToken = "DappLinkTheWeb3"
@@ -30,7 +31,7 @@ type ChainRequest interface {
 	GetChainId() string
 }
 
-type CommonReply = wallet_api.CommonResponse
+type CommonReply = walletapi.CommonResponse
 
 type ChainId = string
 
@@ -86,7 +87,7 @@ func (d *ChainDispatcher) Interceptor(ctx context.Context, req interface{}, info
 	consumerToken := req.(CommonRequest).GetConsumerToken()
 	if consumerToken != GrpcToken {
 		return CommonReply{
-			Code: wallet_api.ApiReturnCode_APIERROR,
+			Code: common.ReturnCode_ERROR,
 			Msg:  "Consumer token is not valid",
 		}, status.Error(codes.PermissionDenied, "access denied")
 	}
@@ -101,156 +102,156 @@ func (d *ChainDispatcher) preHandler(req interface{}) (resp *CommonReply) {
 	log.Debug("chain", chainId, "req", req)
 	if _, ok := d.registry[chainId]; !ok {
 		return &CommonReply{
-			Code: wallet_api.ApiReturnCode_APIERROR,
+			Code: common.ReturnCode_ERROR,
 			Msg:  config.UnsupportedOperation,
 		}
 	}
 	return nil
 }
 
-func (d *ChainDispatcher) GetSupportChains(ctx context.Context, request *wallet_api.SupportChainRequest) (*wallet_api.SupportChainResponse, error) {
-	var supportChainList []*wallet_api.SupportChain
+func (d *ChainDispatcher) GetSupportChains(ctx context.Context, request *walletapi.SupportChainRequest) (*walletapi.SupportChainResponse, error) {
+	var supportChainList []*walletapi.SupportChain
 	for _, chainItem := range d.conf.Chains {
-		sc := &wallet_api.SupportChain{
+		sc := &walletapi.SupportChain{
 			ChainId:   chainItem.ChainId,
 			ChainName: chainItem.ChainName,
 			Network:   chainItem.Network,
 		}
 		supportChainList = append(supportChainList, sc)
 	}
-	return &wallet_api.SupportChainResponse{
-		Code:   wallet_api.ApiReturnCode_APISUCCESS,
+	return &walletapi.SupportChainResponse{
+		Code:   common.ReturnCode_SUCCESS,
 		Msg:    "success",
 		Chains: supportChainList,
 	}, nil
 }
 
-func (d *ChainDispatcher) ConvertAddresses(ctx context.Context, request *wallet_api.ConvertAddressesRequest) (*wallet_api.ConvertAddressesResponse, error) {
+func (d *ChainDispatcher) ConvertAddresses(ctx context.Context, request *walletapi.ConvertAddressesRequest) (*walletapi.ConvertAddressesResponse, error) {
 	resp := d.preHandler(request)
 	if resp != nil {
-		return &wallet_api.ConvertAddressesResponse{
-			Code: wallet_api.ApiReturnCode_APIERROR,
+		return &walletapi.ConvertAddressesResponse{
+			Code: common.ReturnCode_ERROR,
 			Msg:  "failed to convert addresses",
 		}, nil
 	}
 	return d.registry[request.ChainId].ConvertAddresses(ctx, request)
 }
 
-func (d *ChainDispatcher) ValidAddresses(ctx context.Context, request *wallet_api.ValidAddressesRequest) (*wallet_api.ValidAddressesResponse, error) {
+func (d *ChainDispatcher) ValidAddresses(ctx context.Context, request *walletapi.ValidAddressesRequest) (*walletapi.ValidAddressesResponse, error) {
 	resp := d.preHandler(request)
 	if resp != nil {
-		return &wallet_api.ValidAddressesResponse{
-			Code: wallet_api.ApiReturnCode_APIERROR,
+		return &walletapi.ValidAddressesResponse{
+			Code: common.ReturnCode_ERROR,
 			Msg:  "failed to convert addresses",
 		}, nil
 	}
 	return d.registry[request.ChainId].ValidAddresses(ctx, request)
 }
 
-func (d *ChainDispatcher) GetLastestBlock(ctx context.Context, request *wallet_api.LastestBlockRequest) (*wallet_api.LastestBlockResponse, error) {
+func (d *ChainDispatcher) GetLastestBlock(ctx context.Context, request *walletapi.LastestBlockRequest) (*walletapi.LastestBlockResponse, error) {
 	resp := d.preHandler(request)
 	if resp != nil {
-		return &wallet_api.LastestBlockResponse{
-			Code: wallet_api.ApiReturnCode_APIERROR,
+		return &walletapi.LastestBlockResponse{
+			Code: common.ReturnCode_ERROR,
 			Msg:  "get lastest block failed",
 		}, nil
 	}
 	return d.registry[request.ChainId].GetLastestBlock(ctx, request)
 }
 
-func (d *ChainDispatcher) GetBlock(ctx context.Context, request *wallet_api.BlockRequest) (*wallet_api.BlockResponse, error) {
+func (d *ChainDispatcher) GetBlock(ctx context.Context, request *walletapi.BlockRequest) (*walletapi.BlockResponse, error) {
 	resp := d.preHandler(request)
 	if resp != nil {
-		return &wallet_api.BlockResponse{
-			Code: wallet_api.ApiReturnCode_APIERROR,
+		return &walletapi.BlockResponse{
+			Code: common.ReturnCode_ERROR,
 			Msg:  "get block info failed",
 		}, nil
 	}
 	return d.registry[request.ChainId].GetBlock(ctx, request)
 }
 
-func (d *ChainDispatcher) GetTransactionByHash(ctx context.Context, request *wallet_api.TransactionByHashRequest) (*wallet_api.TransactionByHashResponse, error) {
+func (d *ChainDispatcher) GetTransactionByHash(ctx context.Context, request *walletapi.TransactionByHashRequest) (*walletapi.TransactionByHashResponse, error) {
 	resp := d.preHandler(request)
 	if resp != nil {
-		return &wallet_api.TransactionByHashResponse{
-			Code: wallet_api.ApiReturnCode_APIERROR,
+		return &walletapi.TransactionByHashResponse{
+			Code: common.ReturnCode_ERROR,
 			Msg:  "get transaction by hash failed",
 		}, nil
 	}
 	return d.registry[request.ChainId].GetTransactionByHash(ctx, request)
 }
 
-func (d *ChainDispatcher) GetTransactionByAddress(ctx context.Context, request *wallet_api.TransactionByAddressRequest) (*wallet_api.TransactionByAddressResponse, error) {
+func (d *ChainDispatcher) GetTransactionByAddress(ctx context.Context, request *walletapi.TransactionByAddressRequest) (*walletapi.TransactionByAddressResponse, error) {
 	resp := d.preHandler(request)
 	if resp != nil {
-		return &wallet_api.TransactionByAddressResponse{
-			Code: wallet_api.ApiReturnCode_APIERROR,
+		return &walletapi.TransactionByAddressResponse{
+			Code: common.ReturnCode_ERROR,
 			Msg:  "get transaction by address failed",
 		}, nil
 	}
 	return d.registry[request.ChainId].GetTransactionByAddress(ctx, request)
 }
 
-func (d *ChainDispatcher) GetAccountBalance(ctx context.Context, request *wallet_api.AccountBalanceRequest) (*wallet_api.AccountBalanceResponse, error) {
+func (d *ChainDispatcher) GetAccountBalance(ctx context.Context, request *walletapi.AccountBalanceRequest) (*walletapi.AccountBalanceResponse, error) {
 	resp := d.preHandler(request)
 	if resp != nil {
-		return &wallet_api.AccountBalanceResponse{
-			Code: wallet_api.ApiReturnCode_APIERROR,
+		return &walletapi.AccountBalanceResponse{
+			Code: common.ReturnCode_ERROR,
 			Msg:  "get account balance failed",
 		}, nil
 	}
 	return d.registry[request.ChainId].GetAccountBalance(ctx, request)
 }
 
-func (d *ChainDispatcher) SendTransaction(ctx context.Context, request *wallet_api.SendTransactionsRequest) (*wallet_api.SendTransactionResponse, error) {
+func (d *ChainDispatcher) SendTransaction(ctx context.Context, request *walletapi.SendTransactionsRequest) (*walletapi.SendTransactionResponse, error) {
 	resp := d.preHandler(request)
 	if resp != nil {
-		return &wallet_api.SendTransactionResponse{
-			Code: wallet_api.ApiReturnCode_APIERROR,
+		return &walletapi.SendTransactionResponse{
+			Code: common.ReturnCode_ERROR,
 			Msg:  "send transaction failed",
 		}, nil
 	}
 	return d.registry[request.ChainId].SendTransaction(ctx, request)
 }
 
-func (d *ChainDispatcher) BuildTransactionSchema(ctx context.Context, request *wallet_api.TransactionSchemaRequest) (*wallet_api.TransactionSchemaResponse, error) {
+func (d *ChainDispatcher) BuildTransactionSchema(ctx context.Context, request *walletapi.TransactionSchemaRequest) (*walletapi.TransactionSchemaResponse, error) {
 	resp := d.preHandler(request)
 	if resp != nil {
-		return &wallet_api.TransactionSchemaResponse{
-			Code: wallet_api.ApiReturnCode_APIERROR,
+		return &walletapi.TransactionSchemaResponse{
+			Code: common.ReturnCode_ERROR,
 			Msg:  "build transaction schema failed",
 		}, nil
 	}
 	return d.registry[request.ChainId].BuildTransactionSchema(ctx, request)
 }
 
-func (d *ChainDispatcher) BuildUnSignTransaction(ctx context.Context, request *wallet_api.UnSignTransactionRequest) (*wallet_api.UnSignTransactionResponse, error) {
+func (d *ChainDispatcher) BuildUnSignTransaction(ctx context.Context, request *walletapi.UnSignTransactionRequest) (*walletapi.UnSignTransactionResponse, error) {
 	resp := d.preHandler(request)
 	if resp != nil {
-		return &wallet_api.UnSignTransactionResponse{
-			Code: wallet_api.ApiReturnCode_APIERROR,
+		return &walletapi.UnSignTransactionResponse{
+			Code: common.ReturnCode_ERROR,
 			Msg:  "build unsigned transaction failed",
 		}, nil
 	}
 	return d.registry[request.ChainId].BuildUnSignTransaction(ctx, request)
 }
 
-func (d *ChainDispatcher) BuildSignedTransaction(ctx context.Context, request *wallet_api.SignedTransactionRequest) (*wallet_api.SignedTransactionResponse, error) {
+func (d *ChainDispatcher) BuildSignedTransaction(ctx context.Context, request *walletapi.SignedTransactionRequest) (*walletapi.SignedTransactionResponse, error) {
 	resp := d.preHandler(request)
 	if resp != nil {
-		return &wallet_api.SignedTransactionResponse{
-			Code: wallet_api.ApiReturnCode_APIERROR,
+		return &walletapi.SignedTransactionResponse{
+			Code: common.ReturnCode_ERROR,
 			Msg:  "build signed transaction failed",
 		}, nil
 	}
 	return d.registry[request.ChainId].BuildSignedTransaction(ctx, request)
 }
 
-func (d *ChainDispatcher) GetAddressApproveList(ctx context.Context, request *wallet_api.AddressApproveListRequest) (*wallet_api.AddressApproveListResponse, error) {
+func (d *ChainDispatcher) GetAddressApproveList(ctx context.Context, request *walletapi.AddressApproveListRequest) (*walletapi.AddressApproveListResponse, error) {
 	resp := d.preHandler(request)
 	if resp != nil {
-		return &wallet_api.AddressApproveListResponse{
-			Code: wallet_api.ApiReturnCode_APIERROR,
+		return &walletapi.AddressApproveListResponse{
+			Code: common.ReturnCode_ERROR,
 			Msg:  "get address approve list failed",
 		}, nil
 	}

@@ -19,7 +19,8 @@ import (
 
 	"github.com/dapplink-labs/dapplink-wallet-api/chain"
 	"github.com/dapplink-labs/dapplink-wallet-api/config"
-	wallet_api "github.com/dapplink-labs/dapplink-wallet-api/protobuf/wallet-api"
+	"github.com/dapplink-labs/dapplink-wallet-api/protobuf/common"
+	"github.com/dapplink-labs/dapplink-wallet-api/protobuf/walletapi"
 )
 
 const (
@@ -62,78 +63,78 @@ func NewChainAdaptor(conf *config.Config) (chain.IChainAdaptor, error) {
 	}, nil
 }
 
-func (c *ChainAdaptor) ConvertAddresses(ctx context.Context, req *wallet_api.ConvertAddressesRequest) (*wallet_api.ConvertAddressesResponse, error) {
-	var retAddressList []*wallet_api.Addresses
+func (c *ChainAdaptor) ConvertAddresses(ctx context.Context, req *walletapi.ConvertAddressesRequest) (*walletapi.ConvertAddressesResponse, error) {
+	var retAddressList []*walletapi.Addresses
 	for _, publicKeyItem := range req.PublicKey {
-		var addressItem *wallet_api.Addresses
+		var addressItem *walletapi.Addresses
 		publicKeyBytes, err := hex.DecodeString(strings.TrimPrefix(publicKeyItem.PublicKey, "0x"))
 		if err != nil {
-			addressItem = &wallet_api.Addresses{
+			addressItem = &walletapi.Addresses{
 				Address: "",
 			}
 			log.Error("decode public key fail", "err", err)
 		} else {
 			pubKey := solana.PublicKeyFromBytes(publicKeyBytes)
 			log.Info("convert addresses", "address", pubKey.String())
-			addressItem = &wallet_api.Addresses{
+			addressItem = &walletapi.Addresses{
 				Address: pubKey.String(),
 			}
 		}
 		retAddressList = append(retAddressList, addressItem)
 	}
-	return &wallet_api.ConvertAddressesResponse{
-		Code:    wallet_api.ApiReturnCode_APISUCCESS,
+	return &walletapi.ConvertAddressesResponse{
+		Code:    common.ReturnCode_SUCCESS,
 		Msg:     "success",
 		Address: retAddressList,
 	}, nil
 }
 
-func (c *ChainAdaptor) ValidAddresses(ctx context.Context, req *wallet_api.ValidAddressesRequest) (*wallet_api.ValidAddressesResponse, error) {
-	var retAddressList []*wallet_api.AddressesValid
+func (c *ChainAdaptor) ValidAddresses(ctx context.Context, req *walletapi.ValidAddressesRequest) (*walletapi.ValidAddressesResponse, error) {
+	var retAddressList []*walletapi.AddressesValid
 	for _, address := range req.Addresses {
 		_, err := solana.PublicKeyFromBase58(address.Address)
 		if err != nil {
-			retAddressList = append(retAddressList, &wallet_api.AddressesValid{
+			retAddressList = append(retAddressList, &walletapi.AddressesValid{
 				Address: address.Address,
 				Valid:   false,
 			})
 		} else {
-			retAddressList = append(retAddressList, &wallet_api.AddressesValid{
+			retAddressList = append(retAddressList, &walletapi.AddressesValid{
 				Address: address.Address,
 				Valid:   true,
 			})
 		}
 	}
-	return &wallet_api.ValidAddressesResponse{
-		Code:         wallet_api.ApiReturnCode_APISUCCESS,
+	return &walletapi.ValidAddressesResponse{
+		Code:         common.ReturnCode_SUCCESS,
 		Msg:          "success",
 		AddressValid: retAddressList,
 	}, nil
 }
 
-func (c *ChainAdaptor) GetLastestBlock(ctx context.Context, req *wallet_api.LastestBlockRequest) (*wallet_api.LastestBlockResponse, error) {
+func (c *ChainAdaptor) GetLastestBlock(ctx context.Context, req *walletapi.LastestBlockRequest) (*walletapi.LastestBlockResponse, error) {
 	slot, err := c.solCli.GetSlot(Finalized)
 	if err != nil {
 		log.Error("get latest slot fail", "err", err)
-		return &wallet_api.LastestBlockResponse{
-			Code: wallet_api.ApiReturnCode_APIERROR,
+		return &walletapi.LastestBlockResponse{
+			Code: common.ReturnCode_ERROR,
 			Msg:  err.Error(),
 		}, err
 	}
 
-	return &wallet_api.LastestBlockResponse{
-		Code:   wallet_api.ApiReturnCode_APISUCCESS,
+	return &walletapi.LastestBlockResponse{
+		Code:   common.ReturnCode_SUCCESS,
 		Msg:    "success",
 		Height: slot,
 	}, nil
 }
 
-func (c *ChainAdaptor) GetBlock(ctx context.Context, req *wallet_api.BlockRequest) (*wallet_api.BlockResponse, error) {
+func (c *ChainAdaptor) GetBlock(ctx context.Context, req *walletapi.BlockRequest) (*walletapi.BlockResponse, error) {
 	slot, err := strconv.ParseUint(req.HashHeight, 10, 64)
 	if err != nil {
 		log.Error("parse slot fail", "err", err)
-		return &wallet_api.BlockResponse{
-			Code: wallet_api.ApiReturnCode_APIERROR,
+		return &walletapi.BlockResponse{
+			Code: common.ReturnCode_ERROR,
 			Msg:  err.Error(),
 		}, err
 	}
@@ -141,23 +142,23 @@ func (c *ChainAdaptor) GetBlock(ctx context.Context, req *wallet_api.BlockReques
 	blockResult, err := c.solCli.GetBlockBySlot(slot, Full)
 	if err != nil {
 		log.Error("get block by slot fail", "err", err)
-		return &wallet_api.BlockResponse{
-			Code: wallet_api.ApiReturnCode_APIERROR,
+		return &walletapi.BlockResponse{
+			Code: common.ReturnCode_ERROR,
 			Msg:  err.Error(),
 		}, err
 	}
 
-	var txList []*wallet_api.TransactionList
+	var txList []*walletapi.TransactionList
 	if blockResult.Transactions != nil {
 		for _, tx := range blockResult.Transactions {
-			txList = append(txList, &wallet_api.TransactionList{
+			txList = append(txList, &walletapi.TransactionList{
 				TxHash: tx.Signature,
 			})
 		}
 	}
 
-	return &wallet_api.BlockResponse{
-		Code:         wallet_api.ApiReturnCode_APISUCCESS,
+	return &walletapi.BlockResponse{
+		Code:         common.ReturnCode_SUCCESS,
 		Msg:          "success",
 		Height:       strconv.FormatUint(slot, 10),
 		Hash:         blockResult.BlockHash,
@@ -165,12 +166,12 @@ func (c *ChainAdaptor) GetBlock(ctx context.Context, req *wallet_api.BlockReques
 	}, nil
 }
 
-func (c *ChainAdaptor) GetTransactionByHash(ctx context.Context, req *wallet_api.TransactionByHashRequest) (*wallet_api.TransactionByHashResponse, error) {
+func (c *ChainAdaptor) GetTransactionByHash(ctx context.Context, req *walletapi.TransactionByHashRequest) (*walletapi.TransactionByHashResponse, error) {
 	txResult, err := c.solCli.GetTransaction(req.Hash)
 	if err != nil {
 		log.Error("get transaction fail", "err", err)
-		return &wallet_api.TransactionByHashResponse{
-			Code: wallet_api.ApiReturnCode_APIERROR,
+		return &walletapi.TransactionByHashResponse{
+			Code: common.ReturnCode_ERROR,
 			Msg:  err.Error(),
 		}, err
 	}
@@ -210,26 +211,26 @@ func (c *ChainAdaptor) GetTransactionByHash(ctx context.Context, req *wallet_api
 		}
 	}
 
-	return &wallet_api.TransactionByHashResponse{
-		Code: wallet_api.ApiReturnCode_APISUCCESS,
+	return &walletapi.TransactionByHashResponse{
+		Code: common.ReturnCode_SUCCESS,
 		Msg:  "success",
-		Transaction: &wallet_api.TransactionList{
+		Transaction: &walletapi.TransactionList{
 			TxHash:          req.Hash,
 			Fee:             strconv.FormatUint(txResult.Meta.Fee, 10),
 			Status:          0,
 			TxType:          txType,
 			ContractAddress: contractAddress,
-			From: []*wallet_api.FromAddress{
+			From: []*walletapi.FromAddress{
 				{Address: fromAddr, Amount: amount},
 			},
-			To: []*wallet_api.ToAddress{
+			To: []*walletapi.ToAddress{
 				{Address: toAddr, Amount: amount},
 			},
 		},
 	}, nil
 }
 
-func (c *ChainAdaptor) GetTransactionByAddress(ctx context.Context, req *wallet_api.TransactionByAddressRequest) (*wallet_api.TransactionByAddressResponse, error) {
+func (c *ChainAdaptor) GetTransactionByAddress(ctx context.Context, req *walletapi.TransactionByAddressRequest) (*walletapi.TransactionByAddressResponse, error) {
 	pageSize := req.PageSize
 	if pageSize == 0 {
 		pageSize = 10
@@ -238,39 +239,39 @@ func (c *ChainAdaptor) GetTransactionByAddress(ctx context.Context, req *wallet_
 	signatures, err := c.solCli.GetTxForAddress(req.Address, Finalized, pageSize, "", "")
 	if err != nil {
 		log.Error("get transactions for address fail", "err", err)
-		return &wallet_api.TransactionByAddressResponse{
-			Code: wallet_api.ApiReturnCode_APIERROR,
+		return &walletapi.TransactionByAddressResponse{
+			Code: common.ReturnCode_ERROR,
 			Msg:  err.Error(),
 		}, err
 	}
 
-	var txList []*wallet_api.TransactionList
+	var txList []*walletapi.TransactionList
 	for _, sig := range signatures {
-		txList = append(txList, &wallet_api.TransactionList{
+		txList = append(txList, &walletapi.TransactionList{
 			TxHash: sig.Signature,
 		})
 	}
 
-	return &wallet_api.TransactionByAddressResponse{
-		Code:        wallet_api.ApiReturnCode_APISUCCESS,
+	return &walletapi.TransactionByAddressResponse{
+		Code:        common.ReturnCode_SUCCESS,
 		Msg:         "success",
 		Transaction: txList,
 	}, nil
 }
 
-func (c *ChainAdaptor) GetAccountBalance(ctx context.Context, req *wallet_api.AccountBalanceRequest) (*wallet_api.AccountBalanceResponse, error) {
+func (c *ChainAdaptor) GetAccountBalance(ctx context.Context, req *walletapi.AccountBalanceRequest) (*walletapi.AccountBalanceResponse, error) {
 	if req.ContractAddress == "" || req.ContractAddress == "So11111111111111111111111111111111111111112" {
 		balance, err := c.solCli.GetBalance(req.Address)
 		if err != nil {
 			log.Error("get balance fail", "err", err)
-			return &wallet_api.AccountBalanceResponse{
-				Code: wallet_api.ApiReturnCode_APIERROR,
+			return &walletapi.AccountBalanceResponse{
+				Code: common.ReturnCode_ERROR,
 				Msg:  err.Error(),
 			}, err
 		}
 
-		return &wallet_api.AccountBalanceResponse{
-			Code:    wallet_api.ApiReturnCode_APISUCCESS,
+		return &walletapi.AccountBalanceResponse{
+			Code:    common.ReturnCode_SUCCESS,
 			Msg:     "success",
 			Balance: strconv.FormatUint(balance, 10),
 		}, nil
@@ -278,8 +279,8 @@ func (c *ChainAdaptor) GetAccountBalance(ctx context.Context, req *wallet_api.Ac
 		ownerPubkey, err := solana.PublicKeyFromBase58(req.Address)
 		if err != nil {
 			log.Error("invalid address", "err", err)
-			return &wallet_api.AccountBalanceResponse{
-				Code: wallet_api.ApiReturnCode_APIERROR,
+			return &walletapi.AccountBalanceResponse{
+				Code: common.ReturnCode_ERROR,
 				Msg:  err.Error(),
 			}, err
 		}
@@ -287,8 +288,8 @@ func (c *ChainAdaptor) GetAccountBalance(ctx context.Context, req *wallet_api.Ac
 		mintPubkey, err := solana.PublicKeyFromBase58(req.ContractAddress)
 		if err != nil {
 			log.Error("invalid contract address", "err", err)
-			return &wallet_api.AccountBalanceResponse{
-				Code: wallet_api.ApiReturnCode_APIERROR,
+			return &walletapi.AccountBalanceResponse{
+				Code: common.ReturnCode_ERROR,
 				Msg:  err.Error(),
 			}, err
 		}
@@ -296,16 +297,16 @@ func (c *ChainAdaptor) GetAccountBalance(ctx context.Context, req *wallet_api.Ac
 		ata, _, err := solana.FindAssociatedTokenAddress(ownerPubkey, mintPubkey)
 		if err != nil {
 			log.Error("find associated token address fail", "err", err)
-			return &wallet_api.AccountBalanceResponse{
-				Code: wallet_api.ApiReturnCode_APIERROR,
+			return &walletapi.AccountBalanceResponse{
+				Code: common.ReturnCode_ERROR,
 				Msg:  err.Error(),
 			}, err
 		}
 
 		accountInfo, err := GetAccountInfo(c.sdkClient, ata)
 		if err != nil {
-			return &wallet_api.AccountBalanceResponse{
-				Code:    wallet_api.ApiReturnCode_APISUCCESS,
+			return &walletapi.AccountBalanceResponse{
+				Code:    common.ReturnCode_SUCCESS,
 				Msg:     "success",
 				Balance: "0",
 			}, nil
@@ -316,22 +317,22 @@ func (c *ChainAdaptor) GetAccountBalance(ctx context.Context, req *wallet_api.Ac
 		err = tokenAccount.UnmarshalWithDecoder(decoder)
 		if err != nil {
 			log.Error("unmarshal token account fail", "err", err)
-			return &wallet_api.AccountBalanceResponse{
-				Code: wallet_api.ApiReturnCode_APIERROR,
+			return &walletapi.AccountBalanceResponse{
+				Code: common.ReturnCode_ERROR,
 				Msg:  err.Error(),
 			}, err
 		}
 
-		return &wallet_api.AccountBalanceResponse{
-			Code:    wallet_api.ApiReturnCode_APISUCCESS,
+		return &walletapi.AccountBalanceResponse{
+			Code:    common.ReturnCode_SUCCESS,
 			Msg:     "success",
 			Balance: strconv.FormatUint(tokenAccount.Amount, 10),
 		}, nil
 	}
 }
 
-func (c *ChainAdaptor) SendTransaction(ctx context.Context, req *wallet_api.SendTransactionsRequest) (*wallet_api.SendTransactionResponse, error) {
-	var txnRetList []*wallet_api.RawTransactionReturn
+func (c *ChainAdaptor) SendTransaction(ctx context.Context, req *walletapi.SendTransactionsRequest) (*walletapi.SendTransactionResponse, error) {
+	var txnRetList []*walletapi.RawTransactionReturn
 
 	for _, rawTx := range req.RawTx {
 		config := &SendTransactionRequest{
@@ -345,13 +346,13 @@ func (c *ChainAdaptor) SendTransaction(ctx context.Context, req *wallet_api.Send
 		txHash, err := c.solCli.SendTransaction(rawTx.RawTx, config)
 		if err != nil {
 			log.Error("send transaction fail", "err", err)
-			txnRetList = append(txnRetList, &wallet_api.RawTransactionReturn{
+			txnRetList = append(txnRetList, &walletapi.RawTransactionReturn{
 				TxHash:    "",
 				IsSuccess: false,
 				Message:   err.Error(),
 			})
 		} else {
-			txnRetList = append(txnRetList, &wallet_api.RawTransactionReturn{
+			txnRetList = append(txnRetList, &walletapi.RawTransactionReturn{
 				TxHash:    txHash,
 				IsSuccess: true,
 				Message:   "success",
@@ -359,48 +360,48 @@ func (c *ChainAdaptor) SendTransaction(ctx context.Context, req *wallet_api.Send
 		}
 	}
 
-	return &wallet_api.SendTransactionResponse{
-		Code:   wallet_api.ApiReturnCode_APISUCCESS,
+	return &walletapi.SendTransactionResponse{
+		Code:   common.ReturnCode_SUCCESS,
 		Msg:    "success",
 		TxnRet: txnRetList,
 	}, nil
 }
 
-func (c *ChainAdaptor) BuildTransactionSchema(ctx context.Context, request *wallet_api.TransactionSchemaRequest) (*wallet_api.TransactionSchemaResponse, error) {
-	return &wallet_api.TransactionSchemaResponse{
-		Code: wallet_api.ApiReturnCode_APISUCCESS,
+func (c *ChainAdaptor) BuildTransactionSchema(ctx context.Context, request *walletapi.TransactionSchemaRequest) (*walletapi.TransactionSchemaResponse, error) {
+	return &walletapi.TransactionSchemaResponse{
+		Code: common.ReturnCode_SUCCESS,
 		Msg:  "success",
 	}, nil
 }
 
-func (c *ChainAdaptor) BuildUnSignTransaction(ctx context.Context, request *wallet_api.UnSignTransactionRequest) (*wallet_api.UnSignTransactionResponse, error) {
-	var unsignedTxList []*wallet_api.UnsignedTransactionMessageHash
+func (c *ChainAdaptor) BuildUnSignTransaction(ctx context.Context, request *walletapi.UnSignTransactionRequest) (*walletapi.UnSignTransactionResponse, error) {
+	var unsignedTxList []*walletapi.UnsignedTransactionMessageHash
 
 	for _, base64Txn := range request.Base64Txn {
 		// For now, just return the transaction as-is
 		// In a real implementation, you would parse the transaction data
 		// and build the unsigned transaction
-		unsignedTxList = append(unsignedTxList, &wallet_api.UnsignedTransactionMessageHash{
+		unsignedTxList = append(unsignedTxList, &walletapi.UnsignedTransactionMessageHash{
 			UnsignedTx: base64Txn.Base64Tx,
 		})
 	}
 
-	return &wallet_api.UnSignTransactionResponse{
-		Code:        wallet_api.ApiReturnCode_APISUCCESS,
+	return &walletapi.UnSignTransactionResponse{
+		Code:        common.ReturnCode_SUCCESS,
 		Msg:         "success",
 		UnsignedTxn: unsignedTxList,
 	}, nil
 }
 
-func (c *ChainAdaptor) BuildSignedTransaction(ctx context.Context, request *wallet_api.SignedTransactionRequest) (*wallet_api.SignedTransactionResponse, error) {
-	var signedTxList []*wallet_api.SignedTxWithHash
+func (c *ChainAdaptor) BuildSignedTransaction(ctx context.Context, request *walletapi.SignedTransactionRequest) (*walletapi.SignedTransactionResponse, error) {
+	var signedTxList []*walletapi.SignedTxWithHash
 
 	for _, txnWithSig := range request.TxnWithSignature {
 		// Decode unsigned transaction
 		txBytes, err := base64.StdEncoding.DecodeString(txnWithSig.Base64Tx)
 		if err != nil {
 			log.Error("decode base64 tx fail", "err", err)
-			signedTxList = append(signedTxList, &wallet_api.SignedTxWithHash{
+			signedTxList = append(signedTxList, &walletapi.SignedTxWithHash{
 				SignedTx:  "",
 				TxHash:    "",
 				IsSuccess: false,
@@ -412,7 +413,7 @@ func (c *ChainAdaptor) BuildSignedTransaction(ctx context.Context, request *wall
 		signatureBytes, err := hex.DecodeString(strings.TrimPrefix(txnWithSig.Signature, "0x"))
 		if err != nil {
 			log.Error("decode signature fail", "err", err)
-			signedTxList = append(signedTxList, &wallet_api.SignedTxWithHash{
+			signedTxList = append(signedTxList, &walletapi.SignedTxWithHash{
 				SignedTx:  "",
 				TxHash:    "",
 				IsSuccess: false,
@@ -426,7 +427,7 @@ func (c *ChainAdaptor) BuildSignedTransaction(ctx context.Context, request *wall
 		err = message.UnmarshalWithDecoder(decoder)
 		if err != nil {
 			log.Error("unmarshal message fail", "err", err)
-			signedTxList = append(signedTxList, &wallet_api.SignedTxWithHash{
+			signedTxList = append(signedTxList, &walletapi.SignedTxWithHash{
 				SignedTx:  "",
 				TxHash:    "",
 				IsSuccess: false,
@@ -443,7 +444,7 @@ func (c *ChainAdaptor) BuildSignedTransaction(ctx context.Context, request *wall
 		signedTxBytes, err := tx.MarshalBinary()
 		if err != nil {
 			log.Error("marshal signed tx fail", "err", err)
-			signedTxList = append(signedTxList, &wallet_api.SignedTxWithHash{
+			signedTxList = append(signedTxList, &walletapi.SignedTxWithHash{
 				SignedTx:  "",
 				TxHash:    "",
 				IsSuccess: false,
@@ -454,23 +455,23 @@ func (c *ChainAdaptor) BuildSignedTransaction(ctx context.Context, request *wall
 		// Calculate transaction hash (first signature)
 		txHash := base58.Encode(signatureBytes)
 
-		signedTxList = append(signedTxList, &wallet_api.SignedTxWithHash{
+		signedTxList = append(signedTxList, &walletapi.SignedTxWithHash{
 			SignedTx:  base64.StdEncoding.EncodeToString(signedTxBytes),
 			TxHash:    txHash,
 			IsSuccess: true,
 		})
 	}
 
-	return &wallet_api.SignedTransactionResponse{
-		Code:      wallet_api.ApiReturnCode_APISUCCESS,
+	return &walletapi.SignedTransactionResponse{
+		Code:      common.ReturnCode_SUCCESS,
 		Msg:       "success",
 		SignedTxn: signedTxList,
 	}, nil
 }
 
-func (c *ChainAdaptor) GetAddressApproveList(ctx context.Context, request *wallet_api.AddressApproveListRequest) (*wallet_api.AddressApproveListResponse, error) {
-	return &wallet_api.AddressApproveListResponse{
-		Code: wallet_api.ApiReturnCode_APISUCCESS,
+func (c *ChainAdaptor) GetAddressApproveList(ctx context.Context, request *walletapi.AddressApproveListRequest) (*walletapi.AddressApproveListResponse, error) {
+	return &walletapi.AddressApproveListResponse{
+		Code: common.ReturnCode_SUCCESS,
 		Msg:  "don't support in this stage, support in the future",
 	}, nil
 }

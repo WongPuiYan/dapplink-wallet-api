@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"crypto/sha256"
 	"encoding/hex"
+	"fmt"
 	"math/big"
 	"strings"
 
@@ -18,32 +19,34 @@ const (
 
 // Base58ToHex Convert TRON address from base58 to hexadecimal
 
-// Base58 转 Hex
+// Base58ToHex Convert TRON address from base58 to hexadecimal
 func Base58ToHex(base58Addr string) (string, error) {
-
-	// 解码 base58 地址
-	dec, _ := base58.Decode(base58Addr)
-
-	// 检查解码后的长度是否为 25 字节
-	if len(dec) != 25 {
-		panic("无效的长度")
+	// Decode base58 address
+	dec, err := base58.Decode(base58Addr)
+	if err != nil {
+		return "", fmt.Errorf("failed to decode base58 address: %w", err)
 	}
 
-	// 提取初始地址（前 21 字节）
+	// Check if decoded length is 25 bytes
+	if len(dec) != 25 {
+		return "", fmt.Errorf("invalid address length: expected 25, got %d", len(dec))
+	}
+
+	// Extract initial address (first 21 bytes)
 	initialAddress := dec[:21]
 
-	// 计算验证代码
+	// Calculate verification code
 	expectedVerificationCode := make([]byte, 4)
 	hash := sha256.Sum256(initialAddress)
 	hash2 := sha256.Sum256(hash[:])
 	copy(expectedVerificationCode, hash2[:4])
 
-	// 验证验证代码
+	// Verify verification code
 	if !bytes.Equal(dec[21:], expectedVerificationCode) {
-		panic("无效的验证代码")
+		return "", fmt.Errorf("invalid verification code")
 	}
 
-	// 将初始地址转换为 hex 字符串，并添加 "0x" 前缀
+	// Convert initial address to hex string with "0x" prefix
 	hexAddress := "0x" + hex.EncodeToString(initialAddress)
 	return hexAddress, nil
 }
@@ -53,15 +56,29 @@ func PadLeftZero(hexStr string, length int) string {
 	return strings.Repeat("0", length-len(hexStr)) + hexStr
 }
 
-// ParseTRC20TransferData Extract the 'to' address and 'amount' from ABI encoded data`
-func ParseTRC20TransferData(data string) (string, *big.Int) {
-	// Extract the receiving address (10-20 bytes, 2 characters per byte in hexadecimal, positions 20 to 40)
+// ParseTRC20TransferData Extract the 'to' address and 'amount' from ABI encoded data
+func ParseTRC20TransferData(data string) (string, *big.Int, error) {
+	// Check minimum data length (method signature 8 chars + address 64 chars + amount 64 chars)
+	if len(data) < 136 {
+		return "", nil, fmt.Errorf("invalid data length: expected at least 136, got %d", len(data))
+	}
+
+	// Extract the receiving address (positions 32 to 72)
 	toAddressHex := data[32:72]
-	toAddress, _ := address.HexToAddress(AddressPrefix + toAddressHex) // TRON addresses usually start with '41'
-	valueHex := data[72:136]                                           // Get amount
+	toAddress, err := address.HexToAddress(AddressPrefix + toAddressHex)
+	if err != nil {
+		return "", nil, fmt.Errorf("failed to parse address: %w", err)
+	}
+
+	// Get amount (positions 72 to 136)
+	valueHex := data[72:136]
 	value := new(big.Int)
-	value.SetString(valueHex, 16) // Parse hexadecimal to integer
-	return toAddress.String(), value
+	_, ok := value.SetString(valueHex, 16)
+	if !ok {
+		return "", nil, fmt.Errorf("failed to parse amount from hex: %s", valueHex)
+	}
+
+	return toAddress.String(), value, nil
 }
 
 // Helper functions
